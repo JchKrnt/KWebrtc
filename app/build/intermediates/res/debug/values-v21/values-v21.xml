@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- From: file:/D:/WorkSpace/KWebrtc/app/src/main/res/values-v21/styles.xml -->
+    <eat-comment/>
+    <style name="AppRTCDemoActivityTheme" parent="android:Theme.Material">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>

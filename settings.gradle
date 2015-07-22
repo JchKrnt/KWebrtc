@@ -1,0 +1,1 @@
+include ':app', ':app_demo', ':kurento_webrtc_demo'
