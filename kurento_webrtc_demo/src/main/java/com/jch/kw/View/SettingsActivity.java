@@ -1,25 +1,15 @@
 package com.jch.kw.View;
 
-import android.annotation.TargetApi;
-import android.content.Context;
-import android.content.res.Configuration;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.Uri;
-import android.os.Build;
+import android.app.Activity;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
-import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
-import android.preference.PreferenceManager;
-import android.preference.RingtonePreference;
-import android.text.TextUtils;
 
 import com.jch.kw.R;
-
-import java.util.List;
 
 
 /**
@@ -27,170 +17,178 @@ import java.util.List;
  * handset devices, settings are presented as a single list. On tablets,
  * settings are split by category, with category headers shown to the left of
  * the list of settings.
- * <p/>
+ * <p>
  * See <a href="http://developer.android.com/design/patterns/settings.html">
- * Android Design: Settings</a> for design guidelines and the <a
- * href="http://developer.android.com/guide/topics/ui/settings.html">Settings
- * API Guide</a> for more information on developing a Settings UI.
+ * Android Design: SettingsBean</a> for design guidelines and the <a
+ * href="http://developer.android.com/guide/topics/ui/settings.html">SettingsBean
+ * API Guide</a> for more information on developing a SettingsBean UI.
  */
-public class SettingsActivity extends PreferenceActivity {
+public class SettingsActivity extends Activity implements SharedPreferences.OnSharedPreferenceChangeListener {
+    private MyPreferenceFragment pfm;
 
+    private String keyprefVideoCall;
+    private String keyprefResolution;
+    private String keyprefFps;
+    private String keyprefStartVideoBitrateType;
+    private String keyprefStartVideoBitrateValue;
+    private String keyPrefVideoCodec;
+    private String keyprefHwCodec;
 
-    /**
-     * {@inheritDoc}
-     */
+    private String keyprefStartAudioBitrateType;
+    private String keyprefStartAudioBitrateValue;
+    private String keyPrefAudioCodec;
+
+    private String keyprefCpuUsageDetection;
+    private String keyPrefRoomServerUrl;
+    private String keyPrefDisplayHud;
+
     @Override
-    public boolean onIsMultiPane() {
-        return isXLargeTablet(this);
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        keyprefVideoCall = getString(R.string.pref_videocall_key);
+        keyprefResolution = getString(R.string.pref_resolution_key);
+        keyprefFps = getString(R.string.pref_fps_key);
+        keyprefStartVideoBitrateType = getString(R.string.pref_startvideobitrate_key);
+        keyprefStartVideoBitrateValue = getString(R.string.pref_startvideobitratevalue_key);
+        keyPrefVideoCodec = getString(R.string.pref_videocodec_key);
+        keyprefHwCodec = getString(R.string.pref_hwcodec_key);
+
+        keyprefStartAudioBitrateType = getString(R.string.pref_startaudiobitrate_key);
+        keyprefStartAudioBitrateValue = getString(R.string.pref_startaudiobitratevalue_key);
+        keyPrefAudioCodec = getString(R.string.pref_audiocodec_key);
+
+        keyprefCpuUsageDetection = getString(R.string.pref_cpu_usage_detection_key);
+        keyPrefRoomServerUrl = getString(R.string.pref_room_server_url_key);
+        keyPrefDisplayHud = getString(R.string.pref_displayhud_key);
+
+        FragmentManager fm = getFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        pfm = new MyPreferenceFragment();
+        ft.replace(android.R.id.content, pfm).commit();
+
+
     }
 
-    /**
-     * Helper method to determine if the device has an extra-large screen. For
-     * example, 10" tablets are extra-large.
-     */
-    private static boolean isXLargeTablet(Context context) {
-        return (context.getResources().getConfiguration().screenLayout
-                & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_XLARGE;
-    }
 
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public void onBuildHeaders(List<Header> target) {
-        loadHeadersFromResource(R.xml.pref_headers, target);
+    protected void onResume() {
+        super.onResume();
+
+        SharedPreferences spf = pfm.getPreferenceScreen().getSharedPreferences();
+        spf.registerOnSharedPreferenceChangeListener(this);
+
+        updateSummaryB(spf, keyprefVideoCall);
+        updateSummary(spf, keyprefResolution);
+        updateSummary(spf, keyprefFps);
+        updateSummary(spf, keyprefStartVideoBitrateType);
+        updateSummaryBitrate(spf, keyprefStartVideoBitrateValue);
+        setVideoBitrateEnable(spf);
+        updateSummary(spf, keyPrefVideoCodec);
+        updateSummaryB(spf, keyprefHwCodec);
+
+        updateSummary(spf, keyprefStartAudioBitrateType);
+        updateSummaryBitrate(spf, keyprefStartAudioBitrateValue);
+        setAudioBitrateEnable(spf);
+        updateSummary(spf, keyPrefAudioCodec);
+
+        updateSummaryB(spf, keyprefCpuUsageDetection);
+        updateSummary(spf, keyPrefRoomServerUrl);
+        updateSummaryB(spf, keyPrefDisplayHud);
+
     }
 
-    /**
-     * A preference value change listener that updates the preference's summary
-     * to reflect its new value.
-     */
-    private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
-        @Override
-        public boolean onPreferenceChange(Preference preference, Object value) {
-            String stringValue = value.toString();
+    @Override
+    protected void onPause() {
+        SharedPreferences spf = pfm.getPreferenceScreen().getSharedPreferences();
+        spf.unregisterOnSharedPreferenceChangeListener(this);
 
-            if (preference instanceof ListPreference) {
-                // For list preferences, look up the correct display value in
-                // the preference's 'entries' list.
-                ListPreference listPreference = (ListPreference) preference;
-                int index = listPreference.findIndexOfValue(stringValue);
+        super.onPause();
+    }
 
-                // Set the summary to reflect the new value.
-                preference.setSummary(
-                        index >= 0
-                                ? listPreference.getEntries()[index]
-                                : null);
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences spf, String key) {
 
-            } else if (preference instanceof RingtonePreference) {
-                // For ringtone preferences, look up the correct display value
-                // using RingtoneManager.
-                if (TextUtils.isEmpty(stringValue)) {
-                    // Empty values correspond to 'silent' (no ringtone).
-                    preference.setSummary(R.string.pref_ringtone_silent);
-
-                } else {
-                    Ringtone ringtone = RingtoneManager.getRingtone(
-                            preference.getContext(), Uri.parse(stringValue));
-
-                    if (ringtone == null) {
-                        // Clear the summary if there was a lookup error.
-                        preference.setSummary(null);
-                    } else {
-                        // Set the summary to reflect the new ringtone display
-                        // name.
-                        String name = ringtone.getTitle(preference.getContext());
-                        preference.setSummary(name);
-                    }
-                }
-
-            } else {
-                // For all other preferences, set the summary to the value's
-                // simple string representation.
-                preference.setSummary(stringValue);
-            }
-            return true;
+        if (key.equals(keyprefResolution)
+                || key.equals(keyprefFps)
+                || key.equals(keyprefStartVideoBitrateType)
+                || key.equals(keyPrefVideoCodec)
+                || key.equals(keyprefStartAudioBitrateType)
+                || key.equals(keyPrefAudioCodec)
+                || key.equals(keyPrefRoomServerUrl)) {
+            updateSummary(spf, key);
+        } else if (key.equals(keyprefStartVideoBitrateValue)
+                || key.equals(keyprefStartAudioBitrateValue)) {
+            updateSummaryBitrate(spf, key);
+        } else if (key.equals(keyprefVideoCall)
+                || key.equals(keyprefHwCodec)
+                || key.equals(keyprefCpuUsageDetection)
+                || key.equals(keyPrefDisplayHud)) {
+            updateSummaryB(spf, key);
         }
-    };
+        if (key.equals(keyprefStartVideoBitrateType)) {
+            setVideoBitrateEnable(spf);
+        }
+        if (key.equals(keyprefStartAudioBitrateType)) {
+            setAudioBitrateEnable(spf);
+        }
 
-    /**
-     * Binds a preference's summary to its value. More specifically, when the
-     * preference's value is changed, its summary (line of text below the
-     * preference title) is updated to reflect the value. The summary is also
-     * immediately updated upon calling this method. The exact display format is
-     * dependent on the type of preference.
-     *
-     * @see #sBindPreferenceSummaryToValueListener
-     */
-    private static void bindPreferenceSummaryToValue(Preference preference) {
-        // Set the listener to watch for value changes.
-        preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
-
-        // Trigger the listener immediately with the preference's
-        // current value.
-        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                PreferenceManager
-                        .getDefaultSharedPreferences(preference.getContext())
-                        .getString(preference.getKey(), ""));
     }
 
-    /**
-     * This fragment shows general preferences only. It is used when the
-     * activity is showing a two-pane settings UI.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static class GeneralPreferenceFragment extends PreferenceFragment {
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            addPreferencesFromResource(R.xml.pref_general);
+    private void updateSummary(SharedPreferences spf, String key) {
 
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-            bindPreferenceSummaryToValue(findPreference("example_text"));
-            bindPreferenceSummaryToValue(findPreference("example_list"));
+        Preference preference = pfm.findPreference(key);
+        preference.setSummary(spf.getString(key, ""));
+    }
+
+    private void updateSummaryBitrate(
+            SharedPreferences spf, String key) {
+        Preference updatedPref = pfm.findPreference(key);
+        updatedPref.setSummary(spf.getString(key, "") + " kbps");
+    }
+
+    private void updateSummaryB(SharedPreferences spf, String key) {
+        Preference updatedPref = pfm.findPreference(key);
+        updatedPref.setSummary(spf.getBoolean(key, true)
+                ? getString(R.string.pref_value_enabled)
+                : getString(R.string.pref_value_disabled));
+    }
+
+    private void setVideoBitrateEnable(SharedPreferences spf) {
+        Preference bitratePreferenceValue =
+                pfm.findPreference(getString(R.string.pref_startvideobitrate_key));
+        String bitrateTypeDefault = getString(R.string.pref_startvideobitrate_default);
+        String bitrateType = spf.getString(
+                getString(R.string.pref_startvideobitrate_key), bitrateTypeDefault);
+        if (bitrateType.equals(bitrateTypeDefault)) {
+            bitratePreferenceValue.setEnabled(false);
+        } else {
+            bitratePreferenceValue.setEnabled(true);
         }
     }
 
-    /**
-     * This fragment shows notification preferences only. It is used when the
-     * activity is showing a two-pane settings UI.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static class NotificationPreferenceFragment extends PreferenceFragment {
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            addPreferencesFromResource(R.xml.pref_notification);
-
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-            bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
+    private void setAudioBitrateEnable(SharedPreferences spf) {
+        Preference bitratePreferenceValue =
+                pfm.findPreference(keyprefStartAudioBitrateType);
+        String bitrateTypeDefault = getString(R.string.pref_startaudiobitrate_default);
+        String bitrateType = spf.getString(
+                keyprefStartAudioBitrateType, bitrateTypeDefault);
+        if (bitrateType.equals(bitrateTypeDefault)) {
+            bitratePreferenceValue.setEnabled(false);
+        } else {
+            bitratePreferenceValue.setEnabled(true);
         }
     }
 
-    /**
-     * This fragment shows data and sync preferences only. It is used when the
-     * activity is showing a two-pane settings UI.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static class DataSyncPreferenceFragment extends PreferenceFragment {
+
+    public static class MyPreferenceFragment extends PreferenceFragment {
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            addPreferencesFromResource(R.xml.pref_data_sync);
-
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-            bindPreferenceSummaryToValue(findPreference("sync_frequency"));
+            addPreferencesFromResource(R.xml.pref_settings);
         }
+
+
     }
 }

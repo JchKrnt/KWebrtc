@@ -76,4 +76,4 @@
         android:listSelector="@android:color/darker_gray"
         android:drawSelectorOnTop="false" />
 
-</LinearLayout><!-- From: file:/D:/WorkSpace/KWebrtc/app/src/main/res/layout/activity_connect.xml -->
+</LinearLayout><!-- From: file:/D:/work/workspace/AndroidStudio/KWebrtc/app/src/main/res/layout/activity_connect.xml -->

@@ -9,6 +9,8 @@ import org.webrtc.SessionDescription;
 
 public class VideoActivity extends Activity implements KWEvnent {
 
+    public static final String paramKey = "IntentKey";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
