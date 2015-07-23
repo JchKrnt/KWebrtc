@@ -201,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
     }
-
+    
     private void start(UserType userType) {
         SettingsBean settingsBean = getSettingsValues();
         settingsBean.setUserType(userType);

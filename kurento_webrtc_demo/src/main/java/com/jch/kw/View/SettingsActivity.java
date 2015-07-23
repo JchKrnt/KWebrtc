@@ -17,7 +17,7 @@ import com.jch.kw.R;
  * handset devices, settings are presented as a single list. On tablets,
  * settings are split by category, with category headers shown to the left of
  * the list of settings.
- * <p>
+ * <p/>
  * See <a href="http://developer.android.com/design/patterns/settings.html">
  * Android Design: SettingsBean</a> for design guidelines and the <a
  * href="http://developer.android.com/guide/topics/ui/settings.html">SettingsBean
@@ -54,7 +54,7 @@ public class SettingsActivity extends Activity implements SharedPreferences.OnSh
         keyPrefVideoCodec = getString(R.string.pref_videocodec_key);
         keyprefHwCodec = getString(R.string.pref_hwcodec_key);
 
-        keyprefStartAudioBitrateType = getString(R.string.pref_startaudiobitrate_key);
+        keyprefStartAudioBitrateType = getString(R.string.pref_startaudiobitratevalue_key);
         keyprefStartAudioBitrateValue = getString(R.string.pref_startaudiobitratevalue_key);
         keyPrefAudioCodec = getString(R.string.pref_audiocodec_key);
 
@@ -156,7 +156,7 @@ public class SettingsActivity extends Activity implements SharedPreferences.OnSh
 
     private void setVideoBitrateEnable(SharedPreferences spf) {
         Preference bitratePreferenceValue =
-                pfm.findPreference(getString(R.string.pref_startvideobitrate_key));
+                pfm.findPreference(getString(R.string.pref_startvideobitratevalue_key));
         String bitrateTypeDefault = getString(R.string.pref_startvideobitrate_default);
         String bitrateType = spf.getString(
                 getString(R.string.pref_startvideobitrate_key), bitrateTypeDefault);
