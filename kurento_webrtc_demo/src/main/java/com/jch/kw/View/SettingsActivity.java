@@ -54,7 +54,7 @@ public class SettingsActivity extends Activity implements SharedPreferences.OnSh
         keyPrefVideoCodec = getString(R.string.pref_videocodec_key);
         keyprefHwCodec = getString(R.string.pref_hwcodec_key);
 
-        keyprefStartAudioBitrateType = getString(R.string.pref_startaudiobitratevalue_key);
+        keyprefStartAudioBitrateType = getString(R.string.pref_startaudiobitrate_key);
         keyprefStartAudioBitrateValue = getString(R.string.pref_startaudiobitratevalue_key);
         keyPrefAudioCodec = getString(R.string.pref_audiocodec_key);
 
@@ -169,7 +169,7 @@ public class SettingsActivity extends Activity implements SharedPreferences.OnSh
 
     private void setAudioBitrateEnable(SharedPreferences spf) {
         Preference bitratePreferenceValue =
-                pfm.findPreference(keyprefStartAudioBitrateType);
+                pfm.findPreference(keyprefStartAudioBitrateValue);
         String bitrateTypeDefault = getString(R.string.pref_startaudiobitrate_default);
         String bitrateType = spf.getString(
                 keyprefStartAudioBitrateType, bitrateTypeDefault);
