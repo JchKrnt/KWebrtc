@@ -373,6 +373,7 @@ public class CallActivity extends Activity
     private void onAudioManagerChangedState() {
         // TODO(henrika): disable video if AppRTCAudioManager.AudioDevice.EARPIECE
         // is active.
+
     }
 
     // Create peer connection factory when EGL context is ready.

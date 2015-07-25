@@ -21,4 +21,6 @@ public interface KWEvnent {
     //from peerconnection.
     public void onLocalSdp(SessionDescription localsdp);
 
+    public void onClientPrepareComplete();
+
 }
