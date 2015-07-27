@@ -34,6 +34,25 @@ public class SettingsBean implements Parcelable {
     private UserType userType;
 
 
+
+    public SettingsBean(boolean videoCallEnable, int videoWidth, int videoHeight, String fps, String startVidoBitrate, String startVidoBitrateValue, String videoCode, boolean hwCodeEnable, String audioBitrate, String audioBitrateValue, String audioCode, boolean cpuUsageDetection, String serverUrl, boolean displayHud, UserType userType) {
+        this.videoCallEnable = videoCallEnable;
+        this.videoWidth = videoWidth;
+        this.videoHeight = videoHeight;
+        this.fps = fps;
+        this.startVidoBitrate = startVidoBitrate;
+        this.startVidoBitrateValue = startVidoBitrateValue;
+        this.videoCode = videoCode;
+        this.hwCodeEnable = hwCodeEnable;
+        this.audioBitrate = audioBitrate;
+        this.audioBitrateValue = audioBitrateValue;
+        this.audioCode = audioCode;
+        this.cpuUsageDetection = cpuUsageDetection;
+        this.serverUrl = serverUrl;
+        this.displayHud = displayHud;
+        this.userType = userType;
+    }
+
     public boolean isVideoCallEnable() {
         return videoCallEnable;
     }

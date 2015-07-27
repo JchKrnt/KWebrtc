@@ -7,7 +7,9 @@ import org.webrtc.SessionDescription;
  */
 public interface KWSessionEvent {
 
-    public void processAnwser(SessionDescription anwser);
+    void createOffer();
+
+    void processAnwser(SessionDescription anwser);
 
     /**
      * stop.
