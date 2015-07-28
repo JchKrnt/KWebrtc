@@ -1,5 +1,6 @@
 package com.jch.kw.dao;
 
+import com.google.gson.Gson;
 import com.jch.kw.View.KWEvent;
 import com.jch.kw.util.LogCat;
 import com.jch.kw.util.LooperExecutor;
@@ -54,10 +55,11 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
 
         try {
             LogCat.debug("receive msg : " + msg);
-            JSONObject jsonObject = new JSONObject(msg);
-            String idStr = jsonObject.getString("id");
+            Gson gson = new Gson();
+            JSONObject jsonMsg = gson.fromJson( msg, JSONObject.class);
+            String idStr = jsonMsg.getString("id");
             if (idStr != null && (idStr.equals("masterResponse") || idStr.equals("viewerResponse"))) {
-                onResponse(jsonObject);
+                onResponse(jsonMsg);
             }
 
         } catch (JSONException e) {
