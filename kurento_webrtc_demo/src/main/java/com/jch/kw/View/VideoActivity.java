@@ -1,6 +1,7 @@
 package com.jch.kw.View;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.view.View;
@@ -9,15 +10,19 @@ import android.view.WindowManager;
 
 import com.jch.kw.R;
 import com.jch.kw.bean.SettingsBean;
+import com.jch.kw.dao.KWWebSocketClient;
 import com.jch.kw.execption.UnhandledExceptionHandler;
 import com.jch.kw.rtcClient.AppRTCAudioManager;
+import com.jch.kw.rtcClient.KWRtcSession;
+import com.jch.kw.util.Constant;
 
+import org.webrtc.PeerConnectionFactory;
 import org.webrtc.SessionDescription;
 import org.webrtc.VideoRenderer;
 import org.webrtc.VideoRendererGui;
 import org.webrtc.VideoRendererGui.ScalingType;
 
-public class VideoActivity extends Activity implements KWEvnent {
+public class VideoActivity extends Activity implements KWEvent {
 
     public static final String paramKey = "IntentKey";
     private GLSurfaceView videosf;
@@ -33,6 +38,9 @@ public class VideoActivity extends Activity implements KWEvnent {
     private static final int REMOTE_HEIGHT = 100;
     private VideoRenderer.Callbacks remoteRender;
     private VideoRenderer.Callbacks localRender;
+    private KWRtcSession session = null;
+    private KWWebSocketClient wsClient = null;
+    private ProgressDialog pd = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,12 +66,14 @@ public class VideoActivity extends Activity implements KWEvnent {
         initialize();
 
         scalingType = ScalingType.SCALE_ASPECT_FILL;
+        //websocket.
+        wsClient = KWWebSocketClient.getInstance();
+        wsClient.connect(Constant.HostUrl);
+
         VideoRendererGui.setView(videosf, new Runnable() {
             @Override
             public void run() {
-
-                //TODO run peerConnection.
-
+                createPeerConnectionFactory();
             }
         });
 
@@ -78,10 +88,46 @@ public class VideoActivity extends Activity implements KWEvnent {
         initAudioManager();
     }
 
+    @Override
+    protected void onStop() {
+        if (session != null) {
+            session.close();
+        }
+        super.onStop();
+    }
+
     /**
      * 创建peerConnectionFactory, 初始化peerConnection.
      */
     private void createPeerConnectionFactory() {
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                pd.show();
+                if (session == null) {
+                    session = KWRtcSession.getInstance();
+                    PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
+                    options.networkIgnoreMask = PeerConnectionFactory.Options.ADAPTER_TYPE_WIFI;
+                    session.setPeerConnectionFactoryOptions(options);
+                    session.createPeerConnectionFactory(localRender, remoteRender, settingsBean, VideoActivity.this, VideoRendererGui.getEGLContext(), VideoActivity.this);
+
+
+                    onConnectedToRoomInternal();
+                }
+            }
+        });
+    }
+
+    private void onConnectedToRoomInternal() {
+
+//        if (userType == UserType.BROADCAST) {
+//            rtcSession.masterPeerConnection(localRender);
+//        } else if (userType == UserType.VIEWER) {
+//            rtcSession.viwerPeerConnnection(remoteRender);
+//        }
+        session.createPeerConnection();
+        session.createOffer();
 
     }
 
@@ -131,8 +177,13 @@ public class VideoActivity extends Activity implements KWEvnent {
     }
 
     @Override
-    public void onLocalSdp(SessionDescription localsdp) {
-
+    public void onLocalSdp(final SessionDescription localsdp) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                wsClient.sendSdp(settingsBean.getUserType().getVauleStr(), localsdp.description);
+            }
+        });
     }
 
     @Override
@@ -140,9 +191,29 @@ public class VideoActivity extends Activity implements KWEvnent {
 
     }
 
+    @Override
+    public void onIceConnected() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                pd.dismiss();
+            }
+        });
+    }
+
+    @Override
+    public void onIceDisconnected() {
+
+    }
+
+    @Override
+    public void onPeerConnectionClosed() {
+
+    }
+
     private void initialize() {
 
         videosf = (GLSurfaceView) findViewById(R.id.glsf_view);
-
+        pd = new ProgressDialog(VideoActivity.this);
     }
 }

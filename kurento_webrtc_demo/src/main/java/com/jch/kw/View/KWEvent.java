@@ -5,7 +5,7 @@ import org.webrtc.SessionDescription;
 /**
  * Created by jingbiaowang on 2015/7/22.
  */
-public interface KWEvnent {
+public interface KWEvent {
 
     public void portError(String msg);
 
@@ -23,4 +23,9 @@ public interface KWEvnent {
 
     public void onClientPrepareComplete();
 
+    public void onIceConnected();
+
+    void onIceDisconnected();
+
+    void onPeerConnectionClosed();
 }

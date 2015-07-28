@@ -92,6 +92,7 @@ public class PeerConnectionClient {
     private static final int MAX_VIDEO_HEIGHT = 1280;
     private static final int MAX_VIDEO_FPS = 30;
 
+
     private static final PeerConnectionClient instance = new PeerConnectionClient();
     private final PCObserver pcObserver = new PCObserver();
     private final SDPObserver sdpObserver = new SDPObserver();
@@ -129,6 +130,7 @@ public class PeerConnectionClient {
     private boolean renderVideo;
     private VideoTrack localVideoTrack;
     private VideoTrack remoteVideoTrack;
+
 
     /**
      * Peer connection parameters.

@@ -191,8 +191,14 @@ public class WebSocketChannel {
         }
 
         @Override
-        public void onTextMessage(String s) {
-            wsEvents.onMessage(s);
+        public void onTextMessage(final String s) {
+            checkvalidThreadMethod(new ValidThreadCall() {
+                @Override
+                public void onValidThread() {
+                    wsEvents.onMessage(s);
+                }
+            });
+
         }
 
         @Override

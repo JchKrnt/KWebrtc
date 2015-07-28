@@ -429,7 +429,6 @@ public class AppRtcSession {
 
         @Override
         public void onIceConnectionChange(PeerConnection.IceConnectionState newState) {
-
         }
 
         @Override
@@ -498,7 +497,7 @@ public class AppRtcSession {
         }
     }
 
-    private static String setStartBitrate(String codec, boolean isVideoCodec,
+       private static String setStartBitrate(String codec, boolean isVideoCodec,
                                           String sdpDescription, int bitrateKbps) {
         String[] lines = sdpDescription.split("\r\n");
         int rtpmapLineIndex = -1;

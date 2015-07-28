@@ -9,7 +9,7 @@ public interface KWSessionEvent {
 
     void createOffer();
 
-    void processAnwser(SessionDescription anwser);
+    void processAnwser(String anwser);
 
     /**
      * stop.

@@ -2,9 +2,8 @@ package com.jch.kw.rtcClient;
 
 import android.content.Context;
 import android.opengl.EGLContext;
-import android.util.Log;
 
-import com.jch.kw.View.KWEvnent;
+import com.jch.kw.View.KWEvent;
 import com.jch.kw.bean.SettingsBean;
 import com.jch.kw.bean.UserType;
 import com.jch.kw.util.LogCat;
@@ -28,7 +27,6 @@ import org.webrtc.VideoTrack;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,7 +40,7 @@ public class KWRtcSession implements KWSessionEvent {
     private static KWRtcSession instance;
     private PeerConnectionFactory.Options options;
     private SettingsBean sessionParams;
-    private KWEvnent evnent;
+    private KWEvent evnent;
     private PeerConnectionFactory factory;
 
     public static final String VIDEO_TRACK_ID = "ARDAMSv0";
@@ -111,7 +109,7 @@ public class KWRtcSession implements KWSessionEvent {
     }
 
     public void createPeerConnectionFactory(final VideoRenderer.Callbacks localRender,
-                                            final VideoRenderer.Callbacks remoteRender, SettingsBean sessionParams, final Context context, final EGLContext reanderEGLContext, KWEvnent evnent) {
+                                            final VideoRenderer.Callbacks remoteRender, SettingsBean sessionParams, final Context context, final EGLContext reanderEGLContext, KWEvent evnent) {
         this.sessionParams = sessionParams;
         numberOfCameras = 0;
         preferH264 = false;
@@ -410,8 +408,39 @@ public class KWRtcSession implements KWSessionEvent {
 
 
     @Override
-    public void processAnwser(SessionDescription anwser) {
+    public void processAnwser(String anwser) {
+        if (peerConnection == null || isError) {
+            return;
+        }
 
+        if (preferIsac) {
+            anwser = preferCodec(anwser, AUDIO_CODEC_ISAC, true);
+        }
+        if (sessionParams.isVideoCallEnable() && preferH264) {
+            anwser = preferCodec(anwser, VIDEO_CODEC_H264, false);
+        }
+        if (sessionParams.isVideoCallEnable() && sessionParams.getStartVidoBitrateValue() > 0) {
+            anwser = setStartBitrate(VIDEO_CODEC_VP8, true,
+                    anwser, sessionParams.getStartVidoBitrateValue());
+            anwser = setStartBitrate(VIDEO_CODEC_VP9, true,
+                    anwser, sessionParams.getStartVidoBitrateValue());
+            anwser = setStartBitrate(VIDEO_CODEC_H264, true,
+                    anwser, sessionParams.getStartVidoBitrateValue());
+        }
+        if (sessionParams.getAudioBitrateValue() > 0) {
+            anwser = setStartBitrate(AUDIO_CODEC_OPUS, false,
+                    anwser, sessionParams.getAudioBitrateValue());
+        }
+        LogCat.debug("Set remote SDP.");
+        final SessionDescription sdpRemote = new SessionDescription(
+                SessionDescription.Type.ANSWER, anwser);
+        peerConnection.setRemoteDescription(sdpObserver, sdpRemote);
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                peerConnection.setRemoteDescription(sdpObserver, sdpRemote);
+            }
+        });
 
     }
 
@@ -422,44 +451,101 @@ public class KWRtcSession implements KWSessionEvent {
 
     private class KWPeerConnectionObserver implements PeerConnection.Observer {
 
+        String pcObserverLogMsg = "PC observer ";
+
         @Override
         public void onSignalingChange(PeerConnection.SignalingState newState) {
-
+            LogCat.v(pcObserverLogMsg + "onSignalingChange signalingState : " + newState.name());
         }
 
         @Override
-        public void onIceConnectionChange(PeerConnection.IceConnectionState newState) {
+        public void onIceConnectionChange(final PeerConnection.IceConnectionState newState) {
 
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    LogCat.v(pcObserverLogMsg + "onIceConnectionChange IceConnectionState : " + newState.name());
+                    if (newState == PeerConnection.IceConnectionState.CONNECTED) {
+                        evnent.onIceConnected();
+                    } else if (newState == PeerConnection.IceConnectionState.DISCONNECTED) {
+                        evnent.onIceDisconnected();
+                    } else if (newState == PeerConnection.IceConnectionState.FAILED) {
+                        reportError("ICE connection failed.");
+                    }
+                }
+            });
         }
 
         @Override
         public void onIceGatheringChange(PeerConnection.IceGatheringState newState) {
+            LogCat.v(pcObserverLogMsg + "onIceGatheringChange IceGatheringState : " + newState.name());
+
+            if (PeerConnection.IceGatheringState.COMPLETE.equals(newState)) {
+                if (peerConnection != null)
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            evnent.onLocalSdp(peerConnection.getLocalDescription());
+                        }
+                    });
+            }
 
         }
 
         @Override
         public void onIceCandidate(IceCandidate candidate) {
+            LogCat.v(pcObserverLogMsg + "onIceCandidate IceCandidate : " + candidate.sdp);
 
         }
 
         @Override
-        public void onAddStream(MediaStream stream) {
-
+        public void onAddStream(final MediaStream stream) {
+            LogCat.v(pcObserverLogMsg + "onAddStream MediaStream : " + stream.label());
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    if (peerConnection == null || isError) {
+                        return;
+                    }
+                    if (stream.audioTracks.size() > 1 || stream.videoTracks.size() > 1) {
+                        reportError("Weird-looking stream: " + stream);
+                        return;
+                    }
+                    if (stream.videoTracks.size() == 1) {
+                        remoteVideoTrack = stream.videoTracks.get(0);
+                        //
+                        remoteVideoTrack.setEnabled(sessionParams.getUserType() == UserType.MASTER ? false : true);
+                        remoteVideoTrack.addRenderer(new VideoRenderer(remoteRender));
+                    }
+                }
+            });
         }
 
         @Override
-        public void onRemoveStream(MediaStream stream) {
-
+        public void onRemoveStream(final MediaStream stream) {
+            LogCat.v(pcObserverLogMsg + "onRemoveStream MediaStream : " + stream.label());
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    if (peerConnection == null || isError) {
+                        return;
+                    }
+                    remoteVideoTrack = null;
+                    stream.videoTracks.get(0).dispose();
+                }
+            });
         }
 
         @Override
         public void onDataChannel(DataChannel dataChannel) {
-
+            LogCat.v(pcObserverLogMsg + "onDataChannel DataChannel : " + dataChannel.label());
+            reportError("AppRTC doesn't use data channels, but got: " + dataChannel.label()
+                    + " anyway!");
         }
 
         @Override
         public void onRenegotiationNeeded() {
-
+            LogCat.v(pcObserverLogMsg + "onRenegotiationNeeded .");
         }
     }
 
@@ -527,18 +613,23 @@ public class KWRtcSession implements KWSessionEvent {
         @Override
         public void onSetSuccess() {
 
+            if (peerConnection.getLocalDescription() != null)
+                LogCat.debug("KW set local description successs !");
 
+            else if (peerConnection.getRemoteDescription() != null)
+                LogCat.debug("KW set remote description success !");
 
         }
 
         @Override
         public void onCreateFailure(String error) {
 
+            reportError("createSDP error: " + error);
         }
 
         @Override
         public void onSetFailure(String error) {
-
+            reportError("setSDP error: " + error);
         }
     }
 
@@ -602,5 +693,101 @@ public class KWRtcSession implements KWSessionEvent {
         return newSdpDescription.toString();
     }
 
+    private static String setStartBitrate(String codec, boolean isVideoCodec,
+                                          String sdpDescription, int bitrateKbps) {
+        String[] lines = sdpDescription.split("\r\n");
+        int rtpmapLineIndex = -1;
+        boolean sdpFormatUpdated = false;
+        String codecRtpMap = null;
+        // Search for codec rtpmap in format
+        // a=rtpmap:<payload type> <encoding name>/<clock rate> [/<encoding parameters>]
+        String regex = "^a=rtpmap:(\\d+) " + codec + "(/\\d+)+[\r]?$";
+        Pattern codecPattern = Pattern.compile(regex);
+        for (int i = 0; i < lines.length; i++) {
+            Matcher codecMatcher = codecPattern.matcher(lines[i]);
+            if (codecMatcher.matches()) {
+                codecRtpMap = codecMatcher.group(1);
+                rtpmapLineIndex = i;
+                break;
+            }
+        }
+        if (codecRtpMap == null) {
+            LogCat.v("No rtpmap for " + codec + " codec");
+            return sdpDescription;
+        }
+        LogCat.debug("Found " + codec + " rtpmap " + codecRtpMap
+                + " at " + lines[rtpmapLineIndex]);
 
+        // Check if a=fmtp string already exist in remote SDP for this codec and
+        // update it with new bitrate parameter.
+        regex = "^a=fmtp:" + codecRtpMap + " \\w+=\\d+.*[\r]?$";
+        codecPattern = Pattern.compile(regex);
+        for (int i = 0; i < lines.length; i++) {
+            Matcher codecMatcher = codecPattern.matcher(lines[i]);
+            if (codecMatcher.matches()) {
+                LogCat.debug("Found " + codec + " " + lines[i]);
+                if (isVideoCodec) {
+                    lines[i] += "; " + VIDEO_CODEC_PARAM_START_BITRATE
+                            + "=" + bitrateKbps;
+                } else {
+                    lines[i] += "; " + AUDIO_CODEC_PARAM_BITRATE
+                            + "=" + (bitrateKbps * 1000);
+                }
+                LogCat.debug("Update remote SDP line: " + lines[i]);
+                sdpFormatUpdated = true;
+                break;
+            }
+        }
+
+        StringBuilder newSdpDescription = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            newSdpDescription.append(lines[i]).append("\r\n");
+            // Append new a=fmtp line if no such line exist for a codec.
+            if (!sdpFormatUpdated && i == rtpmapLineIndex) {
+                String bitrateSet;
+                if (isVideoCodec) {
+                    bitrateSet = "a=fmtp:" + codecRtpMap + " "
+                            + VIDEO_CODEC_PARAM_START_BITRATE + "=" + bitrateKbps;
+                } else {
+                    bitrateSet = "a=fmtp:" + codecRtpMap + " "
+                            + AUDIO_CODEC_PARAM_BITRATE + "=" + (bitrateKbps * 1000);
+                }
+                LogCat.debug("Add remote SDP line: " + bitrateSet);
+                newSdpDescription.append(bitrateSet).append("\r\n");
+            }
+
+        }
+        return newSdpDescription.toString();
+    }
+
+    public void close() {
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                closeInternal();
+            }
+        });
+    }
+
+    private void closeInternal() {
+        LogCat.debug("Closing peer connection.");
+//        statsTimer.cancel();
+        if (peerConnection != null && PeerConnection.IceConnectionState.CLOSED.equals(peerConnection.iceConnectionState())) {
+            peerConnection.dispose();
+            peerConnection = null;
+        }
+        LogCat.debug("Closing video source.");
+        if (videoSource != null && videoSource.state().equals(VideoSource.State.MUTED)) {
+            videoSource.dispose();
+            videoSource = null;
+        }
+        LogCat.debug("Closing peer connection factory.");
+        if (factory != null) {
+            factory.dispose();
+            factory = null;
+        }
+        options = null;
+        LogCat.debug("Closing peer connection done.");
+        evnent.onPeerConnectionClosed();
+    }
 }
