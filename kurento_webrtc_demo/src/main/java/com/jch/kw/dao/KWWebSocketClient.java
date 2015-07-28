@@ -126,6 +126,7 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
                 try {
                     jsonObject.put("id", userType);
                     jsonObject.put("sdpOffer", sdp);
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
