@@ -2,6 +2,7 @@ package com.jch.kw.rtcClient;
 
 import android.content.Context;
 import android.opengl.EGLContext;
+import android.util.Log;
 
 import com.jch.kw.View.KWEvent;
 import com.jch.kw.bean.SettingsBean;
@@ -88,6 +89,7 @@ public class KWRtcSession implements KWSessionEvent {
     private VideoRenderer.Callbacks localRender;
     private VideoRenderer.Callbacks remoteRender;
     private final KWSdpObserver sdpObserver = new KWSdpObserver();
+    private boolean videoSourceStopped;
 
     private KWRtcSession() {
         executor = new LooperExecutor();
@@ -125,6 +127,7 @@ public class KWRtcSession implements KWSessionEvent {
         remoteVideoTrack = null;
         localRenderVideo = sessionParams.getUserType() == UserType.MASTER ? true : false;
         remoteRenderVideo = !localRenderVideo;
+        videoSourceStopped = false;
         this.remoteRender = remoteRender;
         this.localRender = localRender;
         this.evnent = evnent;
@@ -133,6 +136,32 @@ public class KWRtcSession implements KWSessionEvent {
             @Override
             public void run() {
                 createPeerConnectionFactoryInternal(context, reanderEGLContext);
+            }
+        });
+    }
+
+    public void stopVideoSource() {
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (videoSource != null && !videoSourceStopped) {
+                    LogCat.debug("Stop video source.");
+                    videoSource.stop();
+                    videoSourceStopped = true;
+                }
+            }
+        });
+    }
+
+    public void startVideoSource() {
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (videoSource != null && videoSourceStopped) {
+                    LogCat.debug("Restart video source.");
+                    videoSource.restart();
+                    videoSourceStopped = false;
+                }
             }
         });
     }
@@ -441,7 +470,6 @@ public class KWRtcSession implements KWSessionEvent {
         LogCat.debug("Set remote SDP.");
         final SessionDescription sdpRemote = new SessionDescription(
                 SessionDescription.Type.ANSWER, anwser);
-        peerConnection.setRemoteDescription(sdpObserver, sdpRemote);
         executor.execute(new Runnable() {
             @Override
             public void run() {

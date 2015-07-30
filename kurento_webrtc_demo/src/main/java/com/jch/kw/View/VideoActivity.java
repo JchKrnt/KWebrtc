@@ -96,12 +96,18 @@ public class VideoActivity extends Activity implements KWEvent {
     @Override
     protected void onResume() {
         super.onResume();
+        videosf.onResume();
+        if (session != null)
+            session.startVideoSource();
         activityRunning = true;
     }
 
     @Override
     protected void onPause() {
+        videosf.onPause();
         activityRunning = false;
+        if (session != null)
+            session.stopVideoSource();
         super.onPause();
     }
 
@@ -180,7 +186,7 @@ public class VideoActivity extends Activity implements KWEvent {
             audioManager.close();
             audioManager = null;
         }
-
+        onBackPressed();
         this.finish();
 
     }
