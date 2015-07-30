@@ -186,7 +186,6 @@ public class VideoActivity extends Activity implements KWEvent {
             audioManager.close();
             audioManager = null;
         }
-        onBackPressed();
         this.finish();
 
     }
