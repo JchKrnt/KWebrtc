@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
 
-        sBean.setFps(String.valueOf(cameraFps));
+        sBean.setFps(cameraFps);
 
         // Get video and audio start bitrate.
         int videoStartBitrate = 0;
@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     getString(R.string.pref_startvideobitratevalue_default));
             videoStartBitrate = Integer.parseInt(bitrateValue);
         }
-        sBean.setStartVidoBitrateValue(String.valueOf(videoStartBitrate));
+        sBean.setStartVidoBitrateValue(videoStartBitrate);
 
         int audioStartBitrate = 0;
         bitrateTypeDefault = getString(R.string.pref_startaudiobitrate_default);
@@ -138,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     getString(R.string.pref_startaudiobitratevalue_default));
             audioStartBitrate = Integer.parseInt(bitrateValue);
         }
-        sBean.setAudioBitrateValue(String.valueOf(audioStartBitrate));
+        sBean.setAudioBitrateValue(audioStartBitrate);
         // Test if CpuOveruseDetection should be disabled. By default is on.
         boolean cpuOveruseDetection = spf.getBoolean(
                 keyprefCpuUsageDetection,
@@ -201,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
     }
-    
+
     private void start(UserType userType) {
         SettingsBean settingsBean = getSettingsValues();
         settingsBean.setUserType(userType);

@@ -1,14 +1,14 @@
 package com.jch.kw.dao;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.jch.kw.View.KWEvent;
 import com.jch.kw.util.LogCat;
 import com.jch.kw.util.LooperExecutor;
 import com.jch.kw.util.WebSocketChannel;
 
 import org.json.JSONException;
-import org.json.JSONObject;
-import org.webrtc.SessionDescription;
 
 /**
  * Created by jingbiaowang on 2015/7/22.
@@ -21,9 +21,11 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
 
     private static KWWebSocketClient instance;
     private KWEvent event;
+    Gson gson = new GsonBuilder().create();
 
     private KWWebSocketClient() {
         instance = this;
+
         webSocketChannel = new WebSocketChannel(executor);
     }
 
@@ -35,8 +37,9 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
     }
 
     public void connect(String urlStr, KWEvent event) {
-        webSocketChannel.connect(urlStr, this);
         this.event = event;
+        executor.requestStart();
+        webSocketChannel.connect(urlStr, this);
     }
 
     @Override
@@ -53,18 +56,16 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
     @Override
     public void onMessage(String msg) {
 
-        try {
-            LogCat.debug("receive msg : " + msg);
-            Gson gson = new Gson();
-            JSONObject jsonMsg = gson.fromJson( msg, JSONObject.class);
-            String idStr = jsonMsg.getString("id");
-            if (idStr != null && (idStr.equals("masterResponse") || idStr.equals("viewerResponse"))) {
-                onResponse(jsonMsg);
-            }
+        LogCat.debug("receive msg : " + msg);
 
-        } catch (JSONException e) {
-            e.printStackTrace();
+        JsonObject jsonMsg = gson.fromJson(msg, JsonObject.class);
+        String idStr = jsonMsg.get("id").getAsString();
+        if (idStr != null && ((idStr.equals("masterResponse") || idStr.equals("viewerResponse")))) {
+            onResponse(jsonMsg);
+        } else if (idStr != null && "stopCommunication".equals(idStr)) {
+            event.onDisconnect();
         }
+
     }
 
 
@@ -73,15 +74,12 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
      *
      * @param responseObj
      */
-    private void onResponse(JSONObject responseObj) {
-        try {
-            if (responseObj.has("response") && "accepted".equals(responseObj.getString("response"))) {
-                event.onRemoteAnswer(responseObj.getString("sdpAnswer"));
-            } else {
-                event.portError("'Call not accepted for the following reason: " + responseObj.getString("message"));
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
+
+    private void onResponse(JsonObject responseObj) {
+        if (responseObj.has("response") && "accepted".equals(responseObj.get("response").getAsString())) {
+            event.onRemoteAnswer(responseObj.get("sdpAnswer").getAsString());
+        } else {
+            event.portError("'Call not accepted for the following reason: " + responseObj.get("message").getAsString());
         }
     }
 
@@ -91,7 +89,7 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
         event.onDisconnect();
     }
 
-    public void sendStop() {
+    private void sendStop() {
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -101,6 +99,13 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
         });
 
         //TODO client stop.
+    }
+
+    public void disconnect() {
+
+        sendStop();
+        webSocketChannel.disconnect(false);
+        executor.requestStop();
     }
 
     @Override
@@ -124,14 +129,9 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
         executor.execute(new Runnable() {
             @Override
             public void run() {
-                JSONObject jsonObject = new JSONObject();
-                try {
-                    jsonObject.put("id", userType);
-                    jsonObject.put("sdpOffer", sdp);
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                JsonObject jsonObject = new JsonObject();
+                jsonObject.addProperty("id", userType);
+                jsonObject.addProperty("sdpOffer", sdp);
 
                 webSocketChannel.sendMsg(jsonObject.toString());
             }

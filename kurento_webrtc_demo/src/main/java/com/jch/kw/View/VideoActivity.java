@@ -1,9 +1,12 @@
 package com.jch.kw.View;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -15,6 +18,7 @@ import com.jch.kw.execption.UnhandledExceptionHandler;
 import com.jch.kw.rtcClient.AppRTCAudioManager;
 import com.jch.kw.rtcClient.KWRtcSession;
 import com.jch.kw.util.Constant;
+import com.jch.kw.util.LogCat;
 
 import org.webrtc.PeerConnectionFactory;
 import org.webrtc.SessionDescription;
@@ -41,6 +45,7 @@ public class VideoActivity extends Activity implements KWEvent {
     private KWRtcSession session = null;
     private KWWebSocketClient wsClient = null;
     private ProgressDialog pd = null;
+    private boolean activityRunning;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +73,7 @@ public class VideoActivity extends Activity implements KWEvent {
         scalingType = ScalingType.SCALE_ASPECT_FILL;
         //websocket.
         wsClient = KWWebSocketClient.getInstance();
-        wsClient.connect(Constant.HostUrl);
+        wsClient.connect(Constant.HostUrl, this);
 
         VideoRendererGui.setView(videosf, new Runnable() {
             @Override
@@ -89,10 +94,20 @@ public class VideoActivity extends Activity implements KWEvent {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        activityRunning = true;
+    }
+
+    @Override
+    protected void onPause() {
+        activityRunning = false;
+        super.onPause();
+    }
+
+    @Override
     protected void onStop() {
-        if (session != null) {
-            session.close();
-        }
+        disconnect();
         super.onStop();
     }
 
@@ -108,24 +123,18 @@ public class VideoActivity extends Activity implements KWEvent {
                 if (session == null) {
                     session = KWRtcSession.getInstance();
                     PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
-                    options.networkIgnoreMask = PeerConnectionFactory.Options.ADAPTER_TYPE_WIFI;
+                    options.networkIgnoreMask = PeerConnectionFactory.Options.ADAPTER_TYPE_UNKNOWN;
                     session.setPeerConnectionFactoryOptions(options);
                     session.createPeerConnectionFactory(localRender, remoteRender, settingsBean, VideoActivity.this, VideoRendererGui.getEGLContext(), VideoActivity.this);
-
-
-                    onConnectedToRoomInternal();
                 }
+                onConnectedToRoomInternal();
+
             }
         });
     }
 
     private void onConnectedToRoomInternal() {
 
-//        if (userType == UserType.BROADCAST) {
-//            rtcSession.masterPeerConnection(localRender);
-//        } else if (userType == UserType.VIEWER) {
-//            rtcSession.viwerPeerConnnection(remoteRender);
-//        }
         session.createPeerConnection();
         session.createOffer();
 
@@ -156,19 +165,70 @@ public class VideoActivity extends Activity implements KWEvent {
         }
     }
 
+    private void disconnect() {
+
+        if (wsClient != null) {
+            wsClient.disconnect();
+            wsClient = null;
+        }
+        if (session != null) {
+            session.close();
+            session = null;
+        }
+
+        if (audioManager != null) {
+            audioManager.close();
+            audioManager = null;
+        }
+
+        this.finish();
+
+    }
+
+    private void popMsgDialog(String msgStr) {
+        if (!activityRunning) {
+            LogCat.debug("Critical error: " + msgStr);
+            disconnect();
+        } else {
+            new AlertDialog.Builder(this)
+                    .setTitle(getText(R.string.channel_error_title))
+                    .setMessage(msgStr)
+                    .setCancelable(false)
+                    .setNeutralButton(R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.cancel();
+                            disconnect();
+                        }
+                    }).create().show();
+        }
+    }
+
     @Override
-    public void portError(String msg) {
+    public void portError(final String msg) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                popMsgDialog(msg);
+            }
+        });
 
     }
 
     @Override
-    public void onRemoteAnswer(String sdp) {
-
+    public void onRemoteAnswer(final String sdp) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                session.processAnwser(sdp);
+            }
+        });
     }
 
     @Override
     public void onDisconnect() {
 
+        disconnect();
     }
 
     @Override

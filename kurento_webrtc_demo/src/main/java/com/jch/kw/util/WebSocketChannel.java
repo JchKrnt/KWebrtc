@@ -68,6 +68,8 @@ public class WebSocketChannel {
             @Override
             public void onValidThread() {
                 try {
+
+                    LogCat.debug("websocket connect---------.");
                     wsc.connect(new URI(wsUrl), new KWebSocketObserver());
                 } catch (WebSocketException e) {
                     e.printStackTrace();
@@ -113,10 +115,12 @@ public class WebSocketChannel {
                 for (String sendMsg : msges) {
 
                     wsc.sendTextMessage(sendMsg);
+                    LogCat.debug("send msg ====:" + msg);
                 }
 
                 msges.clear();
                 wsc.sendTextMessage(msg);
+                LogCat.debug("send msg ====:" + msg);
                 break;
             }
 
@@ -184,7 +188,7 @@ public class WebSocketChannel {
             checkvalidThreadMethod(new ValidThreadCall() {
                 @Override
                 public void onValidThread() {
-                    wsEvents.onClosed(s);
+//                    wsEvents.onClosed(s);
                 }
             });
 

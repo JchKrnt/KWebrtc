@@ -114,7 +114,7 @@ public class AppRTCAudioManager {
      * Construction
      */
     public static AppRTCAudioManager create(Context context,
-                                     Runnable deviceStateChangeListener) {
+                                            Runnable deviceStateChangeListener) {
         return new AppRTCAudioManager(context, deviceStateChangeListener);
     }
 

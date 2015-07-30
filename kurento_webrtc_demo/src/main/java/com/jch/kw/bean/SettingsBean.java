@@ -11,7 +11,7 @@ public class SettingsBean implements Parcelable {
     private boolean videoCallEnable;
     private int videoWidth;
     private int videoHeight;
-    private String fps;
+    private int fps;
     /**
      * 是否手动设置视频频率。
      */
@@ -34,7 +34,7 @@ public class SettingsBean implements Parcelable {
     private UserType userType;
 
 
-    public SettingsBean(boolean videoCallEnable, int videoWidth, int videoHeight, String fps, String startVidoBitrate, int startVidoBitrateValue, String videoCode, boolean hwCodeEnable, String audioBitrate, int audioBitrateValue, String audioCode, boolean cpuUsageDetection, String serverUrl, boolean displayHud, UserType userType) {
+    public SettingsBean(boolean videoCallEnable, int videoWidth, int videoHeight, int fps, String startVidoBitrate, int startVidoBitrateValue, String videoCode, boolean hwCodeEnable, String audioBitrate, int audioBitrateValue, String audioCode, boolean cpuUsageDetection, String serverUrl, boolean displayHud, UserType userType) {
         this.videoCallEnable = videoCallEnable;
         this.videoWidth = videoWidth;
         this.videoHeight = videoHeight;
@@ -76,11 +76,11 @@ public class SettingsBean implements Parcelable {
         this.videoHeight = videoHeight;
     }
 
-    public String getFps() {
+    public int getFps() {
         return fps;
     }
 
-    public void setFps(String fps) {
+    public void setFps(int fps) {
         this.fps = fps;
     }
 
@@ -182,7 +182,7 @@ public class SettingsBean implements Parcelable {
         dest.writeByte(videoCallEnable ? (byte) 1 : (byte) 0);
         dest.writeInt(this.videoWidth);
         dest.writeInt(this.videoHeight);
-        dest.writeString(this.fps);
+        dest.writeInt(this.fps);
         dest.writeString(this.startVidoBitrate);
         dest.writeInt(this.startVidoBitrateValue);
         dest.writeString(this.videoCode);
@@ -203,7 +203,7 @@ public class SettingsBean implements Parcelable {
         this.videoCallEnable = in.readByte() != 0;
         this.videoWidth = in.readInt();
         this.videoHeight = in.readInt();
-        this.fps = in.readString();
+        this.fps = in.readInt();
         this.startVidoBitrate = in.readString();
         this.startVidoBitrateValue = in.readInt();
         this.videoCode = in.readString();

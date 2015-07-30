@@ -76,7 +76,7 @@ public class KWRtcSession implements KWSessionEvent {
     private MediaConstraints localAudioConstraints;
     private MediaConstraints sdpMediaConstraints;
     private PeerConnection peerConnection;
-    private KWPeerConnectionObserver pcObserver;
+    private final KWPeerConnectionObserver pcObserver = new KWPeerConnectionObserver();
     private MediaStream mediaStream;
     private VideoCapturerAndroid videoCapturer;
     private VideoSource videoSource;
@@ -87,12 +87,12 @@ public class KWRtcSession implements KWSessionEvent {
     private boolean remoteRenderVideo;
     private VideoRenderer.Callbacks localRender;
     private VideoRenderer.Callbacks remoteRender;
-    private KWSdpObserver sdpObserver;
+    private final KWSdpObserver sdpObserver = new KWSdpObserver();
 
     private KWRtcSession() {
         executor = new LooperExecutor();
         executor.requestStart();
-        sdpObserver = new KWSdpObserver();
+
     }
 
     public static KWRtcSession getInstance() {
@@ -105,7 +105,6 @@ public class KWRtcSession implements KWSessionEvent {
 
     public void setPeerConnectionFactoryOptions(PeerConnectionFactory.Options options) {
         this.options = options;
-        this.evnent = evnent;
     }
 
     public void createPeerConnectionFactory(final VideoRenderer.Callbacks localRender,
@@ -202,6 +201,7 @@ public class KWRtcSession implements KWSessionEvent {
 
 
     private void createMediaConstraintsInternal() {
+        LogCat.debug("-------create media constraint.");
         // Create peer connection constraints.
         pcConstraints = new MediaConstraints();
         // Enable DTLS for normal calls and disable for loopback calls.
@@ -225,10 +225,13 @@ public class KWRtcSession implements KWSessionEvent {
             sdpMediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair(
                     "OfferToReceiveAudio", "true"));
         }
+
+        LogCat.debug("-------created media constraint.");
     }
 
     private void createLocalMediaConstraintsInernal() {
         // Check if there is a camera on device and disable video call if not.
+        LogCat.debug("-------create local media constraint.");
         numberOfCameras = VideoCapturerAndroid.getDeviceCount();
         if (numberOfCameras == 0) {
             LogCat.debug("No camera on device. Switch to audio only call.");
@@ -264,7 +267,7 @@ public class KWRtcSession implements KWSessionEvent {
             }
 
             // Add fps constraints.
-            int videoFps = Integer.getInteger(sessionParams.getFps());
+            int videoFps = sessionParams.getFps();
             if (videoFps > 0) {
                 videoFps = Math.min(videoFps, MAX_VIDEO_FPS);
                 localMediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair(
@@ -276,6 +279,9 @@ public class KWRtcSession implements KWSessionEvent {
 
         // Create audio constraints.
         localAudioConstraints = new MediaConstraints();
+
+        LogCat.debug("-------created local media constraint.");
+
     }
 
     private void createPeerConnectionInternal() {
@@ -298,15 +304,15 @@ public class KWRtcSession implements KWSessionEvent {
 
         peerConnection = factory.createPeerConnection(
                 rtcConfig, pcConstraints, pcObserver);
-
+        LogCat.debug(" peer connection created--------");
         // Set default WebRTC tracing and INFO libjingle logging.
         // NOTE: this _must_ happen while |factory| is alive!
         Logging.enableTracing(
                 "logcat:",
                 EnumSet.of(Logging.TraceLevel.TRACE_DEFAULT),
                 Logging.Severity.LS_INFO);
-
         createLocalMediaStream();
+        LogCat.debug(" peer connection created--------");
 
     }
 
@@ -314,6 +320,7 @@ public class KWRtcSession implements KWSessionEvent {
      * 创建 local mediaStream.
      */
     private void createLocalMediaStream() {
+        LogCat.debug(" create local media Stream.--------");
         mediaStream = factory.createLocalMediaStream("ARDAMS");
         if (sessionParams.getUserType() == UserType.MASTER) {
             if (sessionParams.isVideoCallEnable()) {
@@ -349,7 +356,7 @@ public class KWRtcSession implements KWSessionEvent {
         }
 
         peerConnection.addStream(mediaStream);
-
+        LogCat.debug("local stream added");
     }
 
     /**
@@ -383,7 +390,7 @@ public class KWRtcSession implements KWSessionEvent {
 
     @Override
     public void createOffer() {
-
+        LogCat.debug("create offer-------");
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -585,7 +592,7 @@ public class KWRtcSession implements KWSessionEvent {
     private class KWSdpObserver implements SdpObserver {
         @Override
         public void onCreateSuccess(SessionDescription origSdp) {
-
+            LogCat.debug("local sdp created----------");
             if (peerConnection.getLocalDescription() != null) {
                 reportError("Multiple SDP create.");
                 return;

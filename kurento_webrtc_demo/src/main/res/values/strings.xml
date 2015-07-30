@@ -4,4 +4,9 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_video">VideoActivity</string>
+
+    <string name="channel_error_title">Connection error</string>
+
+    <string name="ok">确定</string>
+
 </resources>
