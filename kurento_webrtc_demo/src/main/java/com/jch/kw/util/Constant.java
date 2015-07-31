@@ -21,6 +21,9 @@ public class Constant {
     public static final int REMOTE_Y = 0;
     public static final int REMOTE_WIDTH = 100;
     public static final int REMOTE_HEIGHT = 100;
+//    07-31 11:31:43.466  21674-21674/? D/wertc_device﹕ Android SDK: 21, Release: 5.0.2, Brand: Xiaomi, Device: aries, Id: LRX22G, Hardware: qcom, Manufacturer: Xiaomi, Model: MI 2SC, Product: aries
+
+    public static final String XIAOMi_BRAND = "Xiaomi";
 
     public static final String HostUrl = "ws://10.2.8.194:8080/call";
 }

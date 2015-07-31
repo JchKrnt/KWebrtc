@@ -304,6 +304,7 @@ public class PeerConnectionClient {
         } else {
             PeerConnectionFactory.initializeFieldTrials(null);
         }
+
         // Check if H.264 is used by default.
         preferH264 = false;
         if (videoCallEnabled && peerConnectionParameters.videoCodec != null

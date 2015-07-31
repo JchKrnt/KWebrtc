@@ -567,6 +567,7 @@ public class KWRtcSession implements KWSessionEvent {
                     }
                     remoteVideoTrack = null;
                     stream.videoTracks.get(0).dispose();
+//                    stream.audioTracks.get(0).dispose();
                 }
             });
         }
@@ -648,7 +649,7 @@ public class KWRtcSession implements KWSessionEvent {
         @Override
         public void onSetSuccess() {
 
-            if (peerConnection.getLocalDescription() != null)
+            if (peerConnection.getLocalDescription() != null && peerConnection.getRemoteDescription() == null)
                 LogCat.debug("KW set local description successs !");
 
             else if (peerConnection.getRemoteDescription() != null)
@@ -805,17 +806,19 @@ public class KWRtcSession implements KWSessionEvent {
     }
 
     private void closeInternal() {
-        LogCat.debug("Closing peer connection.");
 //        statsTimer.cancel();
-        if (peerConnection != null && PeerConnection.IceConnectionState.CLOSED.equals(peerConnection.iceConnectionState())) {
+        if (peerConnection != null) {
+            LogCat.debug("Closing peer connection.");
             peerConnection.dispose();
             peerConnection = null;
         }
         LogCat.debug("Closing video source.");
-        if (videoSource != null && videoSource.state().equals(VideoSource.State.MUTED)) {
+        if (videoSource != null) {
+            LogCat.debug("Closing video source.");
             videoSource.dispose();
             videoSource = null;
         }
+
         LogCat.debug("Closing peer connection factory.");
         if (factory != null) {
             factory.dispose();

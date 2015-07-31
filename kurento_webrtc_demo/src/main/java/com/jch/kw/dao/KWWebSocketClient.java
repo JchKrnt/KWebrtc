@@ -17,23 +17,12 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
 
 
     private WebSocketChannel webSocketChannel;
-    public LooperExecutor executor = new LooperExecutor();
-
-    private static KWWebSocketClient instance;
+    private LooperExecutor executor = new LooperExecutor();
     private KWEvent event;
     Gson gson = new GsonBuilder().create();
 
-    private KWWebSocketClient() {
-        instance = this;
-
+    public KWWebSocketClient() {
         webSocketChannel = new WebSocketChannel(executor);
-    }
-
-    public static KWWebSocketClient getInstance() {
-        if (instance == null)
-            instance = new KWWebSocketClient();
-
-        return instance;
     }
 
     public void connect(String urlStr, KWEvent event) {
@@ -85,7 +74,6 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
 
     @Override
     public void onClosed(String msg) {
-
         event.onDisconnect();
     }
 

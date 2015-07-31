@@ -7,6 +7,8 @@ import android.content.DialogInterface;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -17,6 +19,7 @@ import com.jch.kw.dao.KWWebSocketClient;
 import com.jch.kw.execption.UnhandledExceptionHandler;
 import com.jch.kw.rtcClient.AppRTCAudioManager;
 import com.jch.kw.rtcClient.KWRtcSession;
+import com.jch.kw.util.AppRTCUtils;
 import com.jch.kw.util.Constant;
 import com.jch.kw.util.LogCat;
 
@@ -72,7 +75,7 @@ public class VideoActivity extends Activity implements KWEvent {
 
         scalingType = ScalingType.SCALE_ASPECT_FILL;
         //websocket.
-        wsClient = KWWebSocketClient.getInstance();
+        wsClient = new KWWebSocketClient();
         wsClient.connect(Constant.HostUrl, this);
 
         VideoRendererGui.setView(videosf, new Runnable() {
@@ -96,6 +99,8 @@ public class VideoActivity extends Activity implements KWEvent {
     @Override
     protected void onResume() {
         super.onResume();
+
+        AppRTCUtils.logDeviceInfo("wertc_device");
         videosf.onResume();
         if (session != null)
             session.startVideoSource();
@@ -129,7 +134,7 @@ public class VideoActivity extends Activity implements KWEvent {
                 if (session == null) {
                     session = KWRtcSession.getInstance();
                     PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
-                    options.networkIgnoreMask = PeerConnectionFactory.Options.ADAPTER_TYPE_UNKNOWN;
+                    options.networkIgnoreMask = PeerConnectionFactory.Options.ADAPTER_TYPE_WIFI;
                     session.setPeerConnectionFactoryOptions(options);
                     session.createPeerConnectionFactory(localRender, remoteRender, settingsBean, VideoActivity.this, VideoRendererGui.getEGLContext(), VideoActivity.this);
                 }
@@ -186,7 +191,6 @@ public class VideoActivity extends Activity implements KWEvent {
             audioManager.close();
             audioManager = null;
         }
-        this.finish();
 
     }
 
@@ -208,6 +212,14 @@ public class VideoActivity extends Activity implements KWEvent {
                     }).create().show();
         }
     }
+
+//    @Override
+//    public boolean onKeyDown(int keyCode, KeyEvent event) {
+//        if (keyCode == KeyEvent.KEYCODE_BACK) {
+//            disconnect();
+//        }
+//        return super.onKeyDown(keyCode, event);
+//    }
 
     @Override
     public void portError(final String msg) {
@@ -232,8 +244,14 @@ public class VideoActivity extends Activity implements KWEvent {
 
     @Override
     public void onDisconnect() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                onBackPressed();
+                finish();
+            }
+        });
 
-        disconnect();
     }
 
     @Override

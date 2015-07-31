@@ -33,10 +33,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
+import android.os.Build;
 import android.util.Log;
 
 
 import com.jch.kw.util.AppRTCUtils;
+import com.jch.kw.util.Constant;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -205,7 +207,11 @@ public class AppRTCAudioManager {
 
         switch (device) {
             case SPEAKER_PHONE:
-                setSpeakerphoneOn(true);
+
+                if (Build.BRAND.equals(Constant.XIAOMi_BRAND))
+                    setSpeakerphoneOn(false);
+                else
+                    setSpeakerphoneOn(true);
                 selectedAudioDevice = AudioDevice.SPEAKER_PHONE;
                 break;
             case EARPIECE:
