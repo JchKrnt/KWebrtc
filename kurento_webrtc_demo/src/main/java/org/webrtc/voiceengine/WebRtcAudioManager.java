@@ -209,26 +209,6 @@ class WebRtcAudioManager {
         return WebRtcAudioUtils.isAcousticEchoCancelerSupported();
     }
 
-    //关闭扬声器
-    public static void CloseSpeaker(Context context) {
-
-        int currVolume = 0;
-
-        try {
-            AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-            if (audioManager != null) {
-                if (audioManager.isSpeakerphoneOn()) {
-                    audioManager.setSpeakerphoneOn(false);
-                    audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, currVolume,
-                            AudioManager.STREAM_VOICE_CALL);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //Toast.makeText(context,扬声器已经关闭",Toast.LENGTH_SHORT).show();
-    }
-
     // Returns the minimum output buffer size for Java based audio (AudioTrack).
     // This size can also be used for OpenSL ES implementations on devices that
     // lacks support of low-latency output.

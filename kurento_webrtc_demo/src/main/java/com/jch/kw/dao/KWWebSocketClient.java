@@ -3,30 +3,64 @@ package com.jch.kw.dao;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import com.jch.kw.View.KWEvent;
+import com.jch.kw.bean.UserType;
 import com.jch.kw.util.LogCat;
 import com.jch.kw.util.LooperExecutor;
 import com.jch.kw.util.WebSocketChannel;
 
 import org.json.JSONException;
 
+import java.lang.reflect.Type;
+import java.net.Proxy;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Set;
+
 /**
  * Created by jingbiaowang on 2015/7/22.
  */
 public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWebSocket {
 
+    public interface OnListListener {
+        void onListListener(ArrayList<String> masters);
+
+        void onConnectionOpened();
+
+        void onError(String msg);
+    }
 
     private WebSocketChannel webSocketChannel;
     private LooperExecutor executor = new LooperExecutor();
+
+    public void setListListener(OnListListener listListener) {
+        this.listListener = listListener;
+    }
+
+    public void setEvent(KWEvent event) {
+        this.event = event;
+    }
+
+    private static KWWebSocketClient instance;
     private KWEvent event;
+
+    private OnListListener listListener;
     Gson gson = new GsonBuilder().create();
 
     public KWWebSocketClient() {
         webSocketChannel = new WebSocketChannel(executor);
     }
 
-    public void connect(String urlStr, KWEvent event) {
-        this.event = event;
+    public static KWWebSocketClient getInstance() {
+        if (instance == null) {
+            instance = new KWWebSocketClient();
+        }
+        return instance;
+    }
+
+
+    public void connect(String urlStr) {
         executor.requestStart();
         webSocketChannel.connect(urlStr, this);
     }
@@ -40,6 +74,8 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
     @Override
     public void onConnected() {
         LogCat.debug("websocket connected...");
+        if (listListener != null)
+            listListener.onConnectionOpened();
     }
 
     @Override
@@ -53,8 +89,30 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
             onResponse(jsonMsg);
         } else if (idStr != null && "stopCommunication".equals(idStr)) {
             event.onDisconnect();
+        } else if (idStr != null && "listResponse".equals(idStr)) {
+            onListResponse(jsonMsg);
         }
 
+    }
+
+    /**
+     * 服务器返回list。
+     *
+     * @param jsonMsg
+     */
+    private void onListResponse(JsonObject jsonMsg) {
+        String reponseFlag = jsonMsg.get("response").getAsString();
+        if (reponseFlag != null && reponseFlag.equals("accepted")) {
+
+            LogCat.debug("master id : " + jsonMsg.get("masters").getAsString());
+
+            Type collectionType = new TypeToken<Set<String>>() {
+            }.getType();
+            Set<String> masters = gson.fromJson(jsonMsg.get("masters").getAsString(), collectionType);
+            listListener.onListListener(new ArrayList<>(masters));
+        } else {
+            listListener.onError(jsonMsg.get("message").getAsString());
+        }
     }
 
 
@@ -89,11 +147,29 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
         //TODO client stop.
     }
 
+    /* websocket connected...
+08-04 18:20:42.144  19951-19976/? D/Kurento﹕ send msg ====:{"id":"list"}
+08-04 18:20:42.154  19951-19976/? D/Kurento﹕ receive msg : {"id":"listResponse","response":"accepted","masters":"[\"1\"]"}
+08-04 18:20:42.154  19951-19976/? D/Kurento﹕ master id : ["1"]*/
     public void disconnect() {
 
         sendStop();
+    }
+
+    public void close() {
         webSocketChannel.disconnect(false);
         executor.requestStop();
+    }
+
+    public void sendListerRequest() {
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                JsonObject listRequest = new JsonObject();
+                listRequest.addProperty("id", "list");
+                webSocketChannel.sendMsg(listRequest.toString());
+            }
+        });
     }
 
     @Override
@@ -112,19 +188,22 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
 
     }
 
-    @Override
-    public void sendSdp(final String userType, final String sdp) {
+
+    public void sendSdp(final UserType userType, final String sdp, final String masterId) {
         executor.execute(new Runnable() {
             @Override
             public void run() {
                 JsonObject jsonObject = new JsonObject();
-                jsonObject.addProperty("id", userType);
+                jsonObject.addProperty("id", userType.getVauleStr());
                 jsonObject.addProperty("sdpOffer", sdp);
+                if (userType == UserType.VIEWER) {
+                    jsonObject.addProperty("masterKey", masterId);
+                }
 
                 webSocketChannel.sendMsg(jsonObject.toString());
             }
         });
 
-
     }
+
 }

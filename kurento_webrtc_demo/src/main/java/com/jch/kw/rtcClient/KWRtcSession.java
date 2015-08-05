@@ -546,12 +546,17 @@ public class KWRtcSession implements KWSessionEvent {
                         reportError("Weird-looking stream: " + stream);
                         return;
                     }
+
+//                    if (stream.audioTracks.size() == 1 && sessionParams.getUserType() == UserType.MASTER) {
+//                        AudioTrack audioTrack = stream.audioTracks.get(0);
+//                        audioTrack.setEnabled(false);
+//                    }
                     if (stream.videoTracks.size() == 1) {
                         remoteVideoTrack = stream.videoTracks.get(0);
-                        //
                         remoteVideoTrack.setEnabled(sessionParams.getUserType() == UserType.MASTER ? false : true);
                         remoteVideoTrack.addRenderer(new VideoRenderer(remoteRender));
                     }
+
                 }
             });
         }
@@ -567,7 +572,7 @@ public class KWRtcSession implements KWSessionEvent {
                     }
                     remoteVideoTrack = null;
                     stream.videoTracks.get(0).dispose();
-//                    stream.audioTracks.get(0).dispose();
+                    stream.audioTracks.get(0).dispose();
                 }
             });
         }

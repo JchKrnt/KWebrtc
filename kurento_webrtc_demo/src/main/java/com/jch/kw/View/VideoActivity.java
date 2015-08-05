@@ -6,15 +6,13 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
 import com.jch.kw.R;
 import com.jch.kw.bean.SettingsBean;
+import com.jch.kw.bean.UserType;
 import com.jch.kw.dao.KWWebSocketClient;
 import com.jch.kw.execption.UnhandledExceptionHandler;
 import com.jch.kw.rtcClient.AppRTCAudioManager;
@@ -31,7 +29,8 @@ import org.webrtc.VideoRendererGui.ScalingType;
 
 public class VideoActivity extends Activity implements KWEvent {
 
-    public static final String paramKey = "IntentKey";
+    public static final String paramIntentKey = "IntentKey";
+    public static final String paramMastIdKey = "MasterIdkey";
     private GLSurfaceView videosf;
     private SettingsBean settingsBean;
 
@@ -50,12 +49,17 @@ public class VideoActivity extends Activity implements KWEvent {
     private ProgressDialog pd = null;
     private boolean activityRunning;
 
+    private String masterId = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Thread.setDefaultUncaughtExceptionHandler(new UnhandledExceptionHandler(this));
 
-        settingsBean = getIntent().getParcelableExtra(paramKey);
+        settingsBean = getIntent().getParcelableExtra(paramIntentKey);
+        if (settingsBean.getUserType() == UserType.VIEWER) {
+            masterId = getIntent().getStringExtra(paramMastIdKey);
+        }
         // Set window styles for fullscreen-window size. Needs to be done before
         // adding content.
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -75,9 +79,8 @@ public class VideoActivity extends Activity implements KWEvent {
 
         scalingType = ScalingType.SCALE_ASPECT_FILL;
         //websocket.
-        wsClient = new KWWebSocketClient();
-        wsClient.connect(Constant.HostUrl, this);
-
+        wsClient = KWWebSocketClient.getInstance();
+        wsClient.setEvent(this);
         VideoRendererGui.setView(videosf, new Runnable() {
             @Override
             public void run() {
@@ -180,7 +183,6 @@ public class VideoActivity extends Activity implements KWEvent {
 
         if (wsClient != null) {
             wsClient.disconnect();
-            wsClient = null;
         }
         if (session != null) {
             session.close();
@@ -264,7 +266,7 @@ public class VideoActivity extends Activity implements KWEvent {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                wsClient.sendSdp(settingsBean.getUserType().getVauleStr(), localsdp.description);
+                wsClient.sendSdp(settingsBean.getUserType(), localsdp.description, masterId);
             }
         });
     }

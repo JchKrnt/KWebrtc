@@ -48,10 +48,24 @@
             android:layout_weight="1" />
     </LinearLayout>
 
-    <ListView
-        android:id="@+id/roomlist"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"></ListView>
+        android:layout_weight="1">
+
+        <ListView
+            android:id="@+id/roomlist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"></ListView>
+
+        <ProgressBar
+            android:id="@+id/list_pgb"
+            style="@android:style/Widget.ProgressBar.Large"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="50dp" />
+    </FrameLayout>
+
 
 </LinearLayout>
