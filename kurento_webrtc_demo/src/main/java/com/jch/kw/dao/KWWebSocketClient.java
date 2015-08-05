@@ -29,10 +29,12 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
         void onConnectionOpened();
 
         void onError(String msg);
+
+        void onClose();
     }
 
     private WebSocketChannel webSocketChannel;
-    private LooperExecutor executor = new LooperExecutor();
+    private LooperExecutor executor;
 
     public void setListListener(OnListListener listListener) {
         this.listListener = listListener;
@@ -49,16 +51,25 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
     Gson gson = new GsonBuilder().create();
 
     public KWWebSocketClient() {
-        webSocketChannel = new WebSocketChannel(executor);
+        webSocketChannel = new WebSocketChannel();
+
     }
 
     public static KWWebSocketClient getInstance() {
         if (instance == null) {
+
+            LogCat.v("KWWebSocketClient new instance");
             instance = new KWWebSocketClient();
+        } else {
+            LogCat.v("KWWebSocketClient old instance");
         }
         return instance;
     }
 
+    public void setExecutor(LooperExecutor executor) {
+        this.executor = executor;
+        webSocketChannel.setExecutor(executor);
+    }
 
     public void connect(String urlStr) {
         executor.requestStart();
@@ -132,7 +143,9 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
 
     @Override
     public void onClosed(String msg) {
-        event.onDisconnect();
+        if (listListener != null)
+            listListener.onClose();
+        executor.requestStop();
     }
 
     private void sendStop() {
@@ -147,18 +160,12 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
         //TODO client stop.
     }
 
-    /* websocket connected...
-08-04 18:20:42.144  19951-19976/? D/Kurento﹕ send msg ====:{"id":"list"}
-08-04 18:20:42.154  19951-19976/? D/Kurento﹕ receive msg : {"id":"listResponse","response":"accepted","masters":"[\"1\"]"}
-08-04 18:20:42.154  19951-19976/? D/Kurento﹕ master id : ["1"]*/
     public void disconnect() {
-
         sendStop();
     }
 
     public void close() {
-        webSocketChannel.disconnect(false);
-        executor.requestStop();
+        webSocketChannel.disconnect(true);
     }
 
     public void sendListerRequest() {

@@ -48,15 +48,23 @@
             android:layout_weight="1" />
     </LinearLayout>
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Room:" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="5dp"
         android:layout_weight="1">
 
         <ListView
             android:id="@+id/roomlist"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"></ListView>
+            android:layout_height="wrap_content"
+            android:divider="@android:color/holo_green_dark"
+            android:dividerHeight="1dp"></ListView>
 
         <ProgressBar
             android:id="@+id/list_pgb"
@@ -66,6 +74,5 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="50dp" />
     </FrameLayout>
-
 
 </LinearLayout>

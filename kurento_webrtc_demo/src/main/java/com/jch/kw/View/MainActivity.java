@@ -22,6 +22,7 @@ import com.jch.kw.bean.UserType;
 import com.jch.kw.dao.KWWebSocketClient;
 import com.jch.kw.util.Constant;
 import com.jch.kw.util.LogCat;
+import com.jch.kw.util.LooperExecutor;
 
 import java.util.ArrayList;
 
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ProgressBar socketPgb;
     private KWWebSocketClient socketClient;
     private boolean WebSocketOk = false;
+    private ArrayAdapter<String> arrayAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initialize();
 
         socketClient = KWWebSocketClient.getInstance();
+        socketClient.setExecutor(new LooperExecutor());
         socketClient.setListListener(new ListListener());
         socketClient.connect(Constant.HostUrl);
     }
@@ -68,11 +71,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         super.onResume();
+        if (WebSocketOk) {
+            socketClient.sendListerRequest();
+        }
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
 
     }
 
@@ -263,6 +276,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         roomlist = (ListView) findViewById(R.id.roomlist);
         socketPgb = (ProgressBar) findViewById(R.id.list_pgb);
 
+        arrayAdapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1);
+        roomlist.setAdapter(arrayAdapter);
         masterbtn.setOnClickListener(this);
         viewerbtn.setOnClickListener(this);
         roomlist.setOnItemClickListener(new ListClickListener());
@@ -270,8 +285,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void showMasters(ArrayList<String> masters) {
 
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, masters);
-        roomlist.setAdapter(arrayAdapter);
+        arrayAdapter.clear();
+        arrayAdapter.addAll(masters);
+        arrayAdapter.notifyDataSetChanged();
 
     }
 
@@ -304,6 +320,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     socketPgb.setVisibility(View.GONE);
                 }
             });
+        }
+
+        @Override
+        public void onClose() {
+
         }
     }
 
