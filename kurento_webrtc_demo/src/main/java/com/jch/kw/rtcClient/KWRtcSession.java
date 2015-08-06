@@ -524,7 +524,6 @@ public class KWRtcSession implements KWSessionEvent {
                         }
                     });
             }
-
         }
 
         @Override

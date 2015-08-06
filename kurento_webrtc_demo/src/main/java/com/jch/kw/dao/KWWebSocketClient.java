@@ -30,7 +30,7 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
 
         void onError(String msg);
 
-        void onClose();
+        void onClose(String msg);
     }
 
     private WebSocketChannel webSocketChannel;
@@ -144,7 +144,7 @@ public class KWWebSocketClient implements WebSocketChannel.WebSocketEvents, KWWe
     @Override
     public void onClosed(String msg) {
         if (listListener != null)
-            listListener.onClose();
+            listListener.onClose(msg);
         executor.requestStop();
     }
 

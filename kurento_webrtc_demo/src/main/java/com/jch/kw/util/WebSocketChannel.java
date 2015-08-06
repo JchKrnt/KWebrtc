@@ -105,15 +105,15 @@ public class WebSocketChannel {
      */
     private void sendMsgs(String msg) {
 
-                switch (state) {
+        switch (state) {
 
-                    case NEW: {
+            case NEW: {
 
-                        msges.add(msg);
-                        break;
-                    }
+                msges.add(msg);
+                break;
+            }
 
-                    case CONNECTED: {
+            case CONNECTED: {
 
                 for (String sendMsg : msges) {
 
@@ -202,7 +202,7 @@ public class WebSocketChannel {
                 @Override
                 public void onValidThread() {
                     wsEvents.onMessage(s);
-                }
+                 }
             });
 
         }

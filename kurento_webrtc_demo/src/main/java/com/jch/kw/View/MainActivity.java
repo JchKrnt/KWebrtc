@@ -235,6 +235,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         int id = v.getId();
+        UserType userType = UserType.fromCanonicalForm(((Button) v).getText().toString());
 
         String masterId = null;
         switch (id) {
@@ -242,12 +243,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 int selectedId = roomlist.getSelectedItemPosition();
                 if (selectedId >= 0) {
                     masterId = ((ArrayAdapter<String>) (roomlist.getAdapter())).getItem(selectedId);
+                    start(userType, masterId);
+                } else {
+                    socketClient.sendListerRequest();
                 }
+
+                break;
 
             }
             case R.id.master_btn: {
-                UserType userType = UserType.fromCanonicalForm(((Button) v).getText().toString());
+
+
                 start(userType, masterId);
+
+                break;
             }
 
         }
@@ -286,7 +295,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void showMasters(ArrayList<String> masters) {
 
         arrayAdapter.clear();
-        arrayAdapter.addAll(masters);
+        if (masters != null)
+            arrayAdapter.addAll(masters);
         arrayAdapter.notifyDataSetChanged();
 
     }
@@ -318,13 +328,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 public void run() {
                     Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
                     socketPgb.setVisibility(View.GONE);
+                    showMasters(null);
                 }
             });
         }
 
         @Override
-        public void onClose() {
-
+        public void onClose(final String msg) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getApplication(), msg, Toast.LENGTH_SHORT);
+                    LogCat.debug("----websocket client closed.-----");
+                }
+            });
         }
     }
 
